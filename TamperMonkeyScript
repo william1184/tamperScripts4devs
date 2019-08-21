@@ -1,0 +1,178 @@
+// ==UserScript==
+// @name         Teste preencher dados
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  try to take over the world!
+// @author       You
+// @match        http://localhost:8080/WebSoc/cad007.do
+// @grant        GM_xmlhttpRequest
+
+// ==/UserScript==
+
+(function() {
+    'use strict';
+/*
+
+acao: gerar_empresa
+pontuacao: S
+estado: SP
+idade: 5
+
+*/
+
+    var estadoSELECIONADO = "AM";
+    var arrayEstados = ["AC", "AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+
+    var init = function(){
+        var acao = document.getElementById('ac');
+
+        if( acao && acao.value == 'inc' ){
+
+           if( confirm("Deseja preencher automaticamente alguns dados do funcionário?") ){
+               estadoPadrao( window.prompt('Digite a sigla do estado da pessoa: Ex. SP  - > Padrão : AM') ) ;
+               pessoaViaAjax();
+           }
+        }
+
+    };
+
+    var preecheFormularioFuncionario = function( pessoa ){
+        var nomeFunc = document.getElementById("nomeFuncionario");
+        var dtNascimento = document.getElementById("dataNascimentoFormatada");
+        var dataAdmissao = document.getElementById("dataAdmissao");
+        var nomeMae = document.getElementsByName("nomeMaeFuncionario");
+        var nomePai = document.getElementsByName("nomePaiFuncionario");
+        var sexoFunc = document.querySelector("#sexoFuncionario option[value='1']");
+        var ufRg =  document.querySelector("select[name='ufRG'] option[value='" + pessoa.estado + "']");
+
+        var rg = document.getElementById("rg");
+        var dataEmissaoRG = document.querySelector("#rgDataEmissaoFormatada");
+        var cpf = document.getElementById("cpf");
+        var cep = document.getElementById("cep");
+        var estadoCivil = document.querySelector("#estadoCivil option[value='"+getRandomInt(1, 7)+"']").selected = true;
+        var numeroCasa = document.getElementById('numeroEndereco');
+
+        if( sexoFunc ){
+            sexoFunc.selected = true;
+        }
+
+        if( ufRg){
+            ufRg.selected = true;
+        }
+
+        if( nomeFunc ){
+            nomeFunc.value = pessoa.nome;
+        }
+
+        if( dtNascimento ){
+           dtNascimento.value = pessoa.data_nasc;
+        }
+
+        if( dataAdmissao ){
+            dataAdmissao.value = gerarNovaDataApartirDaDataNascimento(pessoa.data_nasc, getRandomInt(18, 25));
+        }
+
+        if( nomeMae ){
+            nomeMae.forEach(function(input){
+                input.value = pessoa.mae;
+            });
+        }
+
+        if( nomePai ){
+            nomePai.forEach(function(input){
+                input.value = pessoa.pai;
+            });
+        }
+
+        if( rg ){
+            rg.value = pessoa.rg;
+        }
+
+        if( dataEmissaoRG ){
+            dataEmissaoRG.value = gerarNovaDataApartirDaDataNascimento(pessoa.data_nasc, getRandomInt(2, 14));
+        }
+
+        if( cpf ){
+            cpf.value = pessoa.cpf;
+        }
+
+        if( cep ){
+            cep.value = pessoa.cep;
+            doAcao('carregaCep');
+        }
+
+        if( numeroCasa ){
+            numeroCasa.value = getRandomInt(1, 1259);
+        }
+
+    };
+
+    var gerarNovaDataApartirDaDataNascimento = function( dtNasc, quantidadeAnos ){
+        if( !quantidadeAnos ){
+            quantidadeAnos = 14;
+        }
+        var dtNascArray = dtNasc.split('/');
+        dtNascArray[2] = parseInt(dtNascArray[2]) + quantidadeAnos;
+
+        return dtNascArray.slice(0,3).join('/');
+
+    };
+
+    var estadoPadrao = function( input ){
+
+      if( input){
+          input = input.toUpperCase();
+          if(arrayEstados.includes(input)){
+             estadoSELECIONADO = input;
+           }
+      }
+
+    };
+
+    var pessoaViaAjax = function(){
+
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: "https://www.4devs.com.br/ferramentas_online.php",
+            data: "acao=gerar_pessoa&sexo=H&pontuacao=S&idade=0&cep_estado=+" + estadoSELECIONADO + "+&txt_qtde=1&cep_cidade=",
+            headers: {
+                "authority": "www.4devs.com.br",
+                "Order-Num": "123",
+                "method": "POST",
+                "path": "/ferramentas_online.php",
+                "scheme": "https",
+                "accept": "*/*",
+                "content-type": "application/x-www-form-urlencoded",
+                "origin": "https://www.4devs.com.br",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "same-origin",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, HEAD, OPTIONS"
+            },
+            onload: function(response) {
+                console.log("Carregou ");
+
+                if( response.responseText ){
+                    preecheFormularioFuncionario( JSON.parse( new String(response.responseText) ) );
+                }
+            }
+        });
+
+    };
+
+    var gerarDataAleatoria = function(){
+        var dia = getRandomInt(1, 28);
+        var mes = getRandomInt(1, 12);
+        var ano = getRandomInt(1990, 2017);
+
+        return dia + "/" + mes + "/" + ano;
+    };
+
+    var getRandomInt = function(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    init();
+})();
