@@ -1,0 +1,95 @@
+// ==UserScript==
+// @name         Script loterias
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  Script pra mostrar meus jogos lotofacil, dia de sorte ou outros.
+// @author       Frank.William
+// @match        *://*/*
+// @grant        GM_xmlhttpRequest
+
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    var meusJogos;
+    var acertosMap = new Map();
+    var mensagem = "";
+
+    var carregarMeusJogos = function(){
+
+        meusJogos = [ { concurso_inicio: 1857 , qtd_teimosinha: 12, jogo: [2,3,5,6,7,10,11,13,14,15,17,19,21,23,24], tipo_concurso: 'lotofacil' },
+                          { concurso_inicio: 191 , qtd_teimosinha: 12, jogo: [2,3,5,7,11,13,17], tipo_concurso: 'dia-de-sorte' } ];
+
+    };
+
+    var jogosAjax = function( meuJogo ){
+        var tipoSorteio = 'lotofacil';
+        var sorteio = "";
+        if( meuJogo ){
+            tipoSorteio = meuJogo.tipo_concurso;
+        }
+
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: `https://www.lotodicas.com.br/api/${tipoSorteio}/${sorteio}`,
+            onload: function(response) {
+                
+                if( response.responseText && meuJogo ){
+                    mensagem = "";
+                    let resultadoJson = JSON.parse(response.responseText);
+                    var qtdAcertos = quantidadeAcertos(meuJogo.jogo, resultadoJson.sorteio );
+                    acertosMap.get( tipoSorteio ).every( function( objectAcerto ){
+                        if( ( meuJogo.jogo.length - objectAcerto.qtdAcertos ) == qtdAcertos ){
+                            mensagem += tipoSorteio + " " + objectAcerto.msg;
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    if( !mensagem ){
+                        mensagem = "Você não ganhou desta vez. " + tipoSorteio + " Concurso: " +resultadoJson.numero + " quantidade de acertos " + quantidadeAcertos(meuJogo.jogo, JSON.parse(response.responseText).sorteio ) + "\n";
+                    }
+                    window.alert( mensagem );
+                    console.log( mensagem );
+                }
+            }
+        });
+
+    };
+
+    var carrregarMapAcertos = function(){
+        acertosMap.set("lotofacil", [{ qtdAcertos: 15, msg: '1 - Prêmio'},
+        { qtdAcertos: 14, msg: '2 - Prêmio'},
+        { qtdAcertos: 13, msg: '3 - Prêmio - 20 reais'},
+        { qtdAcertos: 12, msg: '4 - Prêmio - 8 reais'},
+        { qtdAcertos: 11, msg: '5 - Prêmio - 4 reais'}] );
+
+        acertosMap.set("dia-de-sorte", [{ qtdAcertos: 7, msg: '1 - Prêmio'},
+        { qtdAcertos: 6, msg: '2 - Prêmio'},
+        { qtdAcertos: 5, msg: '3 - Prêmio - 20 reais'},
+        { qtdAcertos: 4, msg: '4 - Prêmio - 4 reais'}]);
+    };
+
+    var quantidadeAcertos = function(jogo, resultado){
+        return resultado.length - ( jogo.filter( function( value ){ return !resultado.includes(value) } ).length );
+    };
+
+    var verificarJogos = function(){
+        meusJogos.forEach( function( meuJogo ){
+            jogosAjax( meuJogo );
+        });
+
+    };
+
+    var init = function(){
+        carregarMeusJogos();
+        carrregarMapAcertos();
+        if( window.confirm('Verificar Jogos?') ){
+            verificarJogos();
+        };
+
+
+    };
+    init();
+})();
