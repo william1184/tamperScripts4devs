@@ -40,7 +40,7 @@
                     let resultadoJson = JSON.parse(response.responseText);
                     var qtdAcertos = quantidadeAcertos(meuJogo.jogo, resultadoJson.sorteio );
                     acertosMap.get( tipoSorteio ).every( function( objectAcerto ){
-                        if( ( meuJogo.jogo.length - objectAcerto.qtdAcertos ) == qtdAcertos ){
+                        if( objectAcerto.qtdAcertos == qtdAcertos ){
                             mensagem += tipoSorteio + " " + objectAcerto.msg;
                             return false;
                         }
